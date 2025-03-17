@@ -1,0 +1,10 @@
+# Ignorar arquivos do Terraform
+.terraform/
+terraform.exe
+terraform-key
+terraform-key.pem
+terraform-key.pub
+*.tfstate
+*.tfstate.*
+Notas.txt
+main1.tf
