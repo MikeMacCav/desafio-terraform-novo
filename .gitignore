@@ -1,5 +1,7 @@
 # Ignorar arquivos do Terraform
+.Backup/
 .terraform/
+.Backup/
 terraform.exe
 terraform-key
 terraform-key.pem
@@ -8,3 +10,4 @@ terraform-key.pub
 *.tfstate.*
 Notas.txt
 main1.tf
+main2.tf
