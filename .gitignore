@@ -1,5 +1,6 @@
 # Ignorar arquivos do Terraform
 .Backup/
+.Backup/
 .terraform/
 .Backup/
 terraform.exe

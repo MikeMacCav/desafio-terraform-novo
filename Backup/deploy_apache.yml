@@ -1,0 +1,19 @@
+- name: Deploy do Apache no Docker via Ansible
+  hosts: servers
+  become: true
+  tasks:
+    - name: Baixar imagem do Apache
+      docker_image:
+        name: httpd:latest
+        source: pull
+
+    - name: Criar container do Apache
+      docker_container:
+        name: apache_container
+        image: httpd:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "80:80"
+        volumes:
+          - /home/ubuntu/desafio-terraform-novo/html:/usr/local/apache2/htdocs

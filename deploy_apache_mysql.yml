@@ -1,0 +1,63 @@
+- name: Deploy do Apache e MySQL no Docker via Ansible
+  hosts: ec2
+  become: yes
+  tasks:
+
+    - name: Criar diretório para o Apache
+      file:
+        path: "/home/ubuntu/desafio-terraform-novo/apache"
+        state: directory
+        mode: "0755"
+
+    - name: Criar Dockerfile do Apache
+      copy:
+        dest: "/home/ubuntu/desafio-terraform-novo/apache/Dockerfile"
+        content: |
+          FROM httpd:latest
+          COPY ./public-html/ /usr/local/apache2/htdocs/
+
+    - name: Criar diretório para o MySQL
+      file:
+        path: "/home/ubuntu/desafio-terraform-novo/mysql"
+        state: directory
+        mode: "0755"
+
+    - name: Criar Dockerfile do MySQL
+      copy:
+        dest: "/home/ubuntu/desafio-terraform-novo/mysql/Dockerfile"
+        content: |
+          FROM mysql:latest
+          ENV MYSQL_ROOT_PASSWORD=root
+          ENV MYSQL_DATABASE=desafio
+          ENV MYSQL_USER=admin
+          ENV MYSQL_PASSWORD=metroid
+          EXPOSE 3306
+  
+    - name: Criar diretório para arquivos HTML
+      file:
+        path: /home/ubuntu/desafio-terraform-novo/apache/public-html
+        state: directory
+        mode: '0755'
+
+    - name: Criar um arquivo index.html para teste
+      copy:
+        dest: /home/ubuntu/desafio-terraform-novo/apache/public-html/index.html
+        content: "<h1>Servidor Apache rodando!</h1>"
+
+    - name: Remover container Apache existente (se houver)
+      command: docker rm -f apache_container
+      ignore_errors: yes
+
+    - name: Criar container do Apache
+      shell: |
+        docker build -t apache_image /home/ubuntu/desafio-terraform-novo/apache
+        docker run -d --name apache_container -p 80:80 apache_image
+
+    - name: Remover container MySQL existente (se houver)
+      command: docker rm -f mysql_container
+      ignore_errors: yes
+
+    - name: Criar container do MySQL
+      shell: |
+        docker build -t mysql_image /home/ubuntu/desafio-terraform-novo/mysql
+        docker run -d --name mysql_container -p 3306:3306 mysql_image
