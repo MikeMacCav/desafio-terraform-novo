@@ -1,8 +1,6 @@
 # Ignorar arquivos do Terraform
-.Backup/
-.Backup/
+.Backup
 .terraform/
-.Backup/
 terraform.exe
 terraform-key
 terraform-key.pem
