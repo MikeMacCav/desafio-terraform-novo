@@ -1,63 +1,76 @@
+---
 - name: Deploy do Apache e MySQL no Docker via Ansible
-  hosts: ec2
-  become: yes
+  hosts: all
+  become: true
+  vars:
+    apache_dir: /home/ubuntu/desafio-terraform-novo/apache
+    mysql_dir: /home/ubuntu/desafio-terraform-novo/mysql
+    html_dir: /home/ubuntu/desafio-terraform-novo/apache/public-html
+
   tasks:
-
-    - name: Criar diretório para o Apache
+    - name: Criar diretórios
       file:
-        path: "/home/ubuntu/desafio-terraform-novo/apache"
+        path: "{{ item }}"
         state: directory
-        mode: "0755"
-
-    - name: Criar Dockerfile do Apache
-      copy:
-        dest: "/home/ubuntu/desafio-terraform-novo/apache/Dockerfile"
-        content: |
-          FROM httpd:latest
-          COPY ./public-html/ /usr/local/apache2/htdocs/
-
-    - name: Criar diretório para o MySQL
-      file:
-        path: "/home/ubuntu/desafio-terraform-novo/mysql"
-        state: directory
-        mode: "0755"
-
-    - name: Criar Dockerfile do MySQL
-      copy:
-        dest: "/home/ubuntu/desafio-terraform-novo/mysql/Dockerfile"
-        content: |
-          FROM mysql:latest
-          ENV MYSQL_ROOT_PASSWORD=root
-          ENV MYSQL_DATABASE=desafio
-          ENV MYSQL_USER=admin
-          ENV MYSQL_PASSWORD=metroid
-          EXPOSE 3306
-  
-    - name: Criar diretório para arquivos HTML
-      file:
-        path: /home/ubuntu/desafio-terraform-novo/apache/public-html
-        state: directory
+        owner: ubuntu
+        group: ubuntu
         mode: '0755'
+      loop:
+        - "{{ html_dir }}"
+        - "{{ apache_dir }}"
+        - "{{ mysql_dir }}"
 
-    - name: Criar um arquivo index.html para teste
+    - name: Criar arquivo index.html para teste
       copy:
-        dest: /home/ubuntu/desafio-terraform-novo/apache/public-html/index.html
-        content: "<h1>Servidor Apache rodando!</h1>"
+        content: "<h1>Servidor Apache funcionando!</h1>"
+        dest: "{{ html_dir }}/index.html"
+        mode: '0644'
 
     - name: Remover container Apache existente (se houver)
-      command: docker rm -f apache_container
-      ignore_errors: yes
-
-    - name: Criar container do Apache
-      shell: |
-        docker build -t apache_image /home/ubuntu/desafio-terraform-novo/apache
-        docker run -d --name apache_container -p 80:80 apache_image
+      community.docker.docker_container:
+        name: apache_container
+        state: absent
+        force_kill: true
 
     - name: Remover container MySQL existente (se houver)
-      command: docker rm -f mysql_container
-      ignore_errors: yes
+      community.docker.docker_container:
+        name: mysql_container
+        state: absent
+        force_kill: true
 
-    - name: Criar container do MySQL
-      shell: |
-        docker build -t mysql_image /home/ubuntu/desafio-terraform-novo/mysql
-        docker run -d --name mysql_container -p 3306:3306 mysql_image
+    - name: Build da imagem do Apache
+      community.docker.docker_image:
+        name: apache-custom
+        source: build
+        build:
+          path: "{{ apache_dir }}"
+
+    - name: Build da imagem do MySQL
+      community.docker.docker_image:
+        name: mysql-custom
+        source: build
+        build:
+          path: "{{ mysql_dir }}"
+
+    - name: Subir container Apache
+      community.docker.docker_container:
+        name: apache_container
+        image: apache-custom
+        state: started
+        ports:
+          - "80:80"
+        volumes:
+          - "{{ html_dir }}:/var/www/html"
+
+    - name: Subir container MySQL
+      community.docker.docker_container:
+        name: mysql_container
+        image: mysql-custom
+        state: started
+        ports:
+          - "3306:3306"
+        env:
+          MYSQL_ROOT_PASSWORD: metroid
+          MYSQL_DATABASE: meubanco
+          MYSQL_USER: admin
+          MYSQL_PASSWORD: metroid
